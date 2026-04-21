@@ -15,7 +15,7 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;padding-bottom:60px;}
 
-  .hero{background:linear-gradient(160deg,#b8ddf0 0%,#d4eef8 50%,#b8ddf0 100%);border-bottom:2px solid var(--border2);padding:48px 20px 60px;text-align:center;position:relative;overflow:hidden;}
+  .hero{background:linear-gradient(160deg,#b8ddf0 0%,#d4eef8 50%,#b8ddf0 100%);border-bottom:2px solid var(--border2);padding:48px 20px 36px;text-align:center;position:relative;overflow:hidden;}
   .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 50% 80%,rgba(255,255,255,.4) 0%,transparent 70%);pointer-events:none;}
   .hero-eyebrow{font-size:10px;letter-spacing:.28em;color:var(--accent2);text-transform:uppercase;margin-bottom:14px;font-weight:500;}
   .hero h1{font-family:'Playfair Display',serif;font-size:clamp(32px,5.5vw,54px);font-weight:400;color:#0a1f2e;line-height:1.1;letter-spacing:-.02em;margin-bottom:14px;}
@@ -24,7 +24,7 @@
   .hero-badge{display:inline-block;margin-top:14px;padding:5px 13px;background:rgba(26,158,92,0.12);border:1px solid rgba(26,158,92,0.3);border-radius:99px;font-size:10px;color:#0f7a44;letter-spacing:.1em;text-transform:uppercase;font-weight:500;}
 
   .wrap{max-width:720px;margin:0 auto;padding:0 16px;}
-  .search-card{margin-top:-30px;background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:28px;box-shadow:0 8px 40px rgba(10,50,80,.12);}
+  .search-card{margin-top:10px;background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:28px;box-shadow:0 8px 40px rgba(10,50,80,.12);}
 
   input[type=text]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:15px 18px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:24px;letter-spacing:.18em;outline:none;transition:border-color .2s,box-shadow .2s;text-align:center;}
   input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,111,160,.1);}
@@ -57,6 +57,14 @@
   .utility-name{font-family:'Playfair Display',serif;font-size:16px;color:#000;font-weight:700;text-align:center;margin-bottom:4px;}
   .meta-source{font-size:10px;color:var(--text3);text-align:center;margin-top:8px;letter-spacing:.08em;}
   .multi-note{font-size:11px;color:var(--text2);text-align:center;background:var(--surface2);border-radius:8px;padding:6px 10px;margin-top:10px;}
+  .compliance-badge{display:inline-block;font-size:11px;padding:3px 10px;border-radius:99px;font-weight:600;letter-spacing:.04em;}
+  .compliance-good{background:#eafaf2;color:var(--green);border:1px solid rgba(26,158,92,0.3);}
+  .compliance-bad{background:#fdeaea;color:var(--red);border:1px solid rgba(192,40,42,0.3);}
+  .zip-stats{display:flex;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+  .zip-stat{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center;}
+  .zip-stat-label{font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;font-weight:500;margin-bottom:4px;}
+  .zip-stat-val{font-family:'Playfair Display',serif;font-size:18px;color:#000;font-weight:700;line-height:1.1;}
+  .zip-stat-val.small{font-size:14px;font-family:'IBM Plex Mono',monospace;}
 
   .section-title{font-size:10px;color:var(--accent2);letter-spacing:.22em;text-transform:uppercase;margin-bottom:12px;font-weight:500;padding-left:4px;}
 
@@ -149,32 +157,16 @@ const API_URL = 'https://YOUR-WORKER-URL.workers.dev';
 function showError(msg){document.getElementById('errorMsg').textContent = msg;}
 function escapeHtml(s){if(typeof s!=='string')return String(s??'');return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-async function getZipInfo(zip) {
-  try {
-    const res = await fetch(`https://api.zippopotam.us/us/${zip}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const place = data.places?.[0];
-    return {
-      city: place?.['place name'] || '',
-      state: place?.['state'] || '',
-      stateAbbr: place?.['state abbreviation'] || '',
-    };
-  } catch {
-    return null;
+async function getData(zip) {
+  if (API_URL.includes('YOUR-WORKER-URL')) {
+    return { location: null, utility: null, compliance: null };
   }
-}
-
-async function getEpaData(zip) {
-  if (API_URL.includes('YOUR-WORKER-URL')) return null;
   try {
     const res = await fetch(`${API_URL}/lookup?zip=${zip}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.found === false) return null;
-    return data;
+    if (!res.ok) return { location: null, utility: null, compliance: null };
+    return await res.json();
   } catch {
-    return null;
+    return { location: null, utility: null, compliance: null };
   }
 }
 
@@ -191,62 +183,89 @@ async function runLookup() {
   report.classList.add('active');
   report.style.display = 'flex';
 
-  // Load ZIP info first (fast), then EPA data (slower)
-  const info = await getZipInfo(zip);
-  renderReport(zip, info, null, true); // Initial render, EPA still loading
-
-  const epa = await getEpaData(zip);
-  renderReport(zip, info, epa, false); // Re-render with EPA data
+  const data = await getData(zip);
+  renderReport(zip, data);
 }
 
-function renderReport(zip, info, epa, epaLoading) {
-  const city = info?.city || 'Unknown City';
-  const state = info?.state || '';
-  const stateAbbr = info?.stateAbbr || '';
+function renderReport(zip, data) {
+  const location = data?.location || {};
+  const utility = data?.utility || null;
+  const compliance = data?.compliance || null;
+
+  const city = location.city || '';
+  const state = location.state || '';
+  const stateAbbr = location.stateAbbr || '';
+  const county = location.county || '';
+  const zipPopulation = location.zipPopulation || null;
 
   const ewgZipUrl = `https://www.ewg.org/tapwater/search-results.php?zip5=${zip}&searchtype=zip`;
   const ewgStateUrl = stateAbbr
     ? `https://www.ewg.org/tapwater/search-results.php?stab=${stateAbbr}&searchtype=largesys`
     : 'https://www.ewg.org/tapwater/';
 
-  const locationLine = info
-    ? `<span>ZIP <strong>${zip}</strong> is in <strong>${escapeHtml(city)}, ${escapeHtml(state)}</strong></span>`
-    : `<span>ZIP <strong>${zip}</strong></span>`;
+  // Build location line with county if available
+  let locationLine;
+  if (city && state) {
+    const countyStr = county ? ` · ${escapeHtml(county)} County` : '';
+    locationLine = `<span>ZIP <strong>${zip}</strong> is in <strong>${escapeHtml(city)}, ${escapeHtml(state)}</strong>${countyStr}</span>`;
+  } else {
+    locationLine = `<span>ZIP <strong>${zip}</strong></span>`;
+  }
 
-  // Build utility metadata block
-  let utilityBlock = '';
-  if (epaLoading) {
-    utilityBlock = `
-      <div class="utility-meta loading">
-        <div class="meta-row"><span class="meta-key">Water Utility</span><span class="meta-val empty">Loading…</span></div>
+  // ZIP stats row (ZIP population)
+  let zipStats = '';
+  if (zipPopulation) {
+    zipStats = `
+      <div class="zip-stats">
+        <div class="zip-stat">
+          <div class="zip-stat-label">ZIP Population</div>
+          <div class="zip-stat-val">${zipPopulation.toLocaleString()}</div>
+        </div>
       </div>`;
-  } else if (epa && (epa.name || epa.sourceType || epa.population)) {
-    const utilityName = epa.name ? `<div class="utility-name">${escapeHtml(epa.name)}</div>` : '';
-    const sourceRow = epa.sourceType
-      ? `<div class="meta-row"><span class="meta-key">Source of Water</span><span class="meta-val">${escapeHtml(epa.sourceType)}</span></div>`
+  }
+
+  // Utility metadata block
+  let utilityBlock = '';
+  if (utility && (utility.name || utility.sourceType || utility.servicePopulation)) {
+    const utilityName = utility.name ? `<div class="utility-name">${escapeHtml(utility.name)}</div>` : '';
+
+    // Compliance badge
+    let complianceRow = '';
+    if (compliance) {
+      const isGood = compliance.inCompliance;
+      const badgeClass = isGood ? 'compliance-good' : 'compliance-bad';
+      const badgeText = isGood
+        ? '✓ In Compliance'
+        : `⚠ ${compliance.activeViolations} Active Violation${compliance.activeViolations === 1 ? '' : 's'}`;
+      complianceRow = `
+        <div class="meta-row">
+          <span class="meta-key">EPA Compliance</span>
+          <span class="compliance-badge ${badgeClass}">${badgeText}</span>
+        </div>`;
+    }
+
+    const sourceRow = utility.sourceType
+      ? `<div class="meta-row"><span class="meta-key">Source of Water</span><span class="meta-val">${escapeHtml(utility.sourceType)}</span></div>`
       : '';
-    const popRow = epa.population
-      ? `<div class="meta-row"><span class="meta-key">Population Served</span><span class="meta-val">${escapeHtml(epa.population)}</span></div>`
-      : '';
-    const multiNote = epa.totalActiveSystems && epa.totalActiveSystems > 1
-      ? `<div class="multi-note">EPA lists ${epa.totalActiveSystems} active water systems in this ZIP — showing the largest</div>`
+    const popRow = utility.servicePopulation
+      ? `<div class="meta-row"><span class="meta-key">Utility Serves</span><span class="meta-val">${utility.servicePopulation.toLocaleString()}</span></div>`
       : '';
     utilityBlock = `
       <div class="utility-meta">
         ${utilityName}
+        ${complianceRow}
         ${sourceRow}
         ${popRow}
-        ${multiNote}
         <div class="meta-source">Source: EPA SDWIS</div>
       </div>`;
   }
-  // If no EPA data, simply omit the block
 
   const html = `
     <div class="zip-card anim">
       <div class="zip-label">Your ZIP Code</div>
       <div class="zip-big">${zip}</div>
       <div class="zip-location">${locationLine}</div>
+      ${zipStats}
       ${utilityBlock}
     </div>
 
@@ -330,9 +349,7 @@ function renderReport(zip, info, epa, epaLoading) {
 
   document.getElementById('report').innerHTML = html;
   document.getElementById('report').style.display = 'flex';
-  if (!epaLoading) {
-    setTimeout(() => document.getElementById('report').scrollIntoView({behavior:'smooth',block:'start'}), 50);
-  }
+  setTimeout(() => document.getElementById('report').scrollIntoView({behavior:'smooth',block:'start'}), 50);
 }
 
 function toggleCalc() {
