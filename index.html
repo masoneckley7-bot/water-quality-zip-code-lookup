@@ -117,7 +117,7 @@
 <div class="hero">
   <div class="hero-eyebrow">◈ Gateway to Official Water Data</div>
   <h1>Water Quality<br /><span>ZIP Code Lookup</span></h1>
-  <p>Enter your ZIP code to access authoritative water quality data from EWG and your local utility's Consumer Confidence Report.</p>
+  <p>Enter your ZIP code to access authoritative water quality data from the EWG Tap Water Database — covering 50,000+ U.S. water utilities.</p>
   <div class="hero-badge">✓ 100% Sourced from Official Data</div>
 </div>
 
@@ -137,15 +137,14 @@
 
 <div class="page-footer">
   All data sourced from official providers · No data is stored or cached<br>
-  <a href="https://www.ewg.org/tapwater/" target="_blank" rel="noopener">EWG Tap Water Database</a> ·
-  <a href="https://www.epa.gov/ccr" target="_blank" rel="noopener">EPA Consumer Confidence Reports</a>
+  <a href="https://www.ewg.org/tapwater/" target="_blank" rel="noopener">EWG Tap Water Database</a>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
 // PASTE YOUR CLOUDFLARE WORKER URL HERE (for EPA data lookup)
 // ═══════════════════════════════════════════════════════════════
-const API_URL = 'https://water-zip-lookup.mason-eckley0.workers.dev';
+const API_URL = 'https://YOUR-WORKER-URL.workers.dev';
 
 function showError(msg){document.getElementById('errorMsg').textContent = msg;}
 function escapeHtml(s){if(typeof s!=='string')return String(s??'');return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -206,7 +205,9 @@ function renderReport(zip, info, epa, epaLoading) {
   const stateAbbr = info?.stateAbbr || '';
 
   const ewgZipUrl = `https://www.ewg.org/tapwater/search-results.php?zip5=${zip}&searchtype=zip`;
-  const epaCcrUrl = 'https://www.epa.gov/ccr/ccr-information-consumers';
+  const ewgStateUrl = stateAbbr
+    ? `https://www.ewg.org/tapwater/search-results.php?stab=${stateAbbr}&searchtype=largesys`
+    : 'https://www.ewg.org/tapwater/';
 
   const locationLine = info
     ? `<span>ZIP <strong>${zip}</strong> is in <strong>${escapeHtml(city)}, ${escapeHtml(state)}</strong></span>`
@@ -264,14 +265,14 @@ function renderReport(zip, info, epa, epaLoading) {
         </div>
       </a>
 
-      <a class="source-link" href="${epaCcrUrl}" target="_blank" rel="noopener">
+      <a class="source-link" href="${ewgStateUrl}" target="_blank" rel="noopener">
         <div class="source-card">
           <div class="source-inner">
             <div class="source-top">
-              <div class="source-name">Find Your Consumer Confidence Report <span class="source-arrow">→</span></div>
-              <span class="source-tag tag-official">Annual Utility Report</span>
+              <div class="source-name">EWG — All ${stateAbbr ? escapeHtml(state) : 'State'} Utilities <span class="source-arrow">→</span></div>
+              <span class="source-tag tag-official">State Overview</span>
             </div>
-            <div class="source-desc">Every U.S. water utility is required to publish an annual Consumer Confidence Report listing every contaminant tested, actual detected levels, and regulatory limits. This is the most authoritative source for your specific water.</div>
+            <div class="source-desc">Browse every major water system in ${stateAbbr ? escapeHtml(state) : 'your state'} on EWG's database. Useful if the ZIP search doesn't find your specific utility, or to compare neighboring systems.</div>
           </div>
         </div>
       </a>
