@@ -48,34 +48,40 @@
   .zip-location{font-size:13px;color:var(--text2);}
   .zip-location strong{color:#000;font-weight:500;}
 
+  .utility-meta{margin-top:18px;padding-top:18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;text-align:left;}
+  .utility-meta.loading{opacity:0.5;}
+  .meta-row{display:flex;align-items:baseline;gap:8px;justify-content:space-between;}
+  .meta-key{color:var(--text3);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:500;}
+  .meta-val{color:#000;font-size:14px;text-align:right;font-weight:500;}
+  .meta-val.empty{color:var(--text3);font-weight:400;font-style:italic;font-size:12px;}
+  .utility-name{font-family:'Playfair Display',serif;font-size:16px;color:#000;font-weight:700;text-align:center;margin-bottom:4px;}
+  .meta-source{font-size:10px;color:var(--text3);text-align:center;margin-top:8px;letter-spacing:.08em;}
+  .multi-note{font-size:11px;color:var(--text2);text-align:center;background:var(--surface2);border-radius:8px;padding:6px 10px;margin-top:10px;}
+
   .section-title{font-size:10px;color:var(--accent2);letter-spacing:.22em;text-transform:uppercase;margin-bottom:12px;font-weight:500;padding-left:4px;}
 
-  .source-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden;transition:all .15s;}
+  .source-link{display:block;text-decoration:none;color:inherit;}
+  .source-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;overflow:hidden;transition:all .15s;margin-bottom:10px;}
   .source-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(10,60,100,.1);transform:translateY(-2px);}
-  .source-link{display:block;text-decoration:none;color:inherit;padding:18px 20px;}
+  .source-inner{padding:18px 20px;}
   .source-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
   .source-name{font-family:'Playfair Display',serif;font-size:17px;color:#000;font-weight:700;}
   .source-tag{font-size:9px;padding:3px 9px;border-radius:99px;letter-spacing:.1em;font-weight:500;}
   .tag-primary{background:#e6f4fb;color:var(--accent2);}
   .tag-official{background:#eafaf2;color:var(--green);}
-  .tag-tool{background:#fff8e6;color:var(--yellow);}
   .source-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-top:4px;}
   .source-arrow{font-size:13px;color:var(--accent);margin-left:8px;}
 
-  .info-banner{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.65;}
-  .info-banner strong{color:#000;}
-
-  /* Hardness calc - stays as useful utility */
+  /* Hardness calc */
   .calc-card{background:var(--surface);border:2px solid #000;border-radius:16px;overflow:hidden;}
   .calc-toggle{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;cursor:pointer;user-select:none;transition:background .15s;}
   .calc-toggle:hover{background:var(--surface2);}
-  .calc-toggle-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
   .calc-toggle-title{font-size:10px;color:#000;letter-spacing:.2em;text-transform:uppercase;font-weight:700;}
   .calc-toggle-sub{font-size:11px;color:var(--text2);margin-top:2px;}
   .calc-chevron{font-size:10px;color:var(--text3);transition:transform .2s;}
   .calc-chevron.open{transform:rotate(180deg);}
   .calc-body{overflow:hidden;max-height:0;transition:max-height .4s ease,opacity .3s ease;opacity:0;}
-  .calc-body.open{max-height:1200px;opacity:1;}
+  .calc-body.open{max-height:1400px;opacity:1;}
   .calc-body-inner{padding:0 22px 22px;}
   .calc-band{display:flex;border-radius:8px;overflow:hidden;height:10px;margin-bottom:6px;}
   .calc-band-seg{height:100%;}
@@ -111,7 +117,7 @@
 <div class="hero">
   <div class="hero-eyebrow">◈ Gateway to Official Water Data</div>
   <h1>Water Quality<br /><span>ZIP Code Lookup</span></h1>
-  <p>Enter your ZIP code to access authoritative water quality data from EWG, EPA, and your local utility. All links go directly to the official source.</p>
+  <p>Enter your ZIP code to access authoritative water quality data from EWG and your local utility's Consumer Confidence Report.</p>
   <div class="hero-badge">✓ 100% Sourced from Official Data</div>
 </div>
 
@@ -131,16 +137,20 @@
 
 <div class="page-footer">
   All data sourced from official providers · No data is stored or cached<br>
-  <a href="https://www.ewg.org/tapwater/" target="_blank" rel="noopener">EWG</a> ·
-  <a href="https://echo.epa.gov/" target="_blank" rel="noopener">EPA ECHO</a> ·
-  <a href="https://www.epa.gov/ccr" target="_blank" rel="noopener">Consumer Confidence Reports</a>
+  <a href="https://www.ewg.org/tapwater/" target="_blank" rel="noopener">EWG Tap Water Database</a> ·
+  <a href="https://www.epa.gov/ccr" target="_blank" rel="noopener">EPA Consumer Confidence Reports</a>
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════════════════
+// PASTE YOUR CLOUDFLARE WORKER URL HERE (for EPA data lookup)
+// ═══════════════════════════════════════════════════════════════
+const API_URL = 'https://water-zip-lookup.mason-eckley0.workers.dev';
+
 function showError(msg){document.getElementById('errorMsg').textContent = msg;}
+function escapeHtml(s){if(typeof s!=='string')return String(s??'');return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 async function getZipInfo(zip) {
-  // Zippopotam.us — free, no-auth ZIP → city/state lookup
   try {
     const res = await fetch(`https://api.zippopotam.us/us/${zip}`);
     if (!res.ok) return null;
@@ -156,6 +166,19 @@ async function getZipInfo(zip) {
   }
 }
 
+async function getEpaData(zip) {
+  if (API_URL.includes('YOUR-WORKER-URL')) return null;
+  try {
+    const res = await fetch(`${API_URL}/lookup?zip=${zip}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.found === false) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 async function runLookup() {
   const zip = document.getElementById('zipInput').value.trim();
   if (!/^\d{5}$/.test(zip)) {
@@ -165,43 +188,73 @@ async function runLookup() {
   showError('');
 
   const report = document.getElementById('report');
-  report.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text2);font-size:12px;">Loading location…</div>';
+  report.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text2);font-size:12px;">Loading…</div>';
   report.classList.add('active');
   report.style.display = 'flex';
 
+  // Load ZIP info first (fast), then EPA data (slower)
   const info = await getZipInfo(zip);
-  renderReport(zip, info);
+  renderReport(zip, info, null, true); // Initial render, EPA still loading
+
+  const epa = await getEpaData(zip);
+  renderReport(zip, info, epa, false); // Re-render with EPA data
 }
 
-function renderReport(zip, info) {
+function renderReport(zip, info, epa, epaLoading) {
   const city = info?.city || 'Unknown City';
   const state = info?.state || '';
   const stateAbbr = info?.stateAbbr || '';
 
-  // Build URLs to official sources
   const ewgZipUrl = `https://www.ewg.org/tapwater/search-results.php?zip5=${zip}&searchtype=zip`;
-  const ewgStateUrl = stateAbbr ? `https://www.ewg.org/tapwater/search-results.php?stab=${stateAbbr}&searchtype=largesys` : `https://www.ewg.org/tapwater/`;
   const epaCcrUrl = 'https://www.epa.gov/ccr/ccr-information-consumers';
-  const epaEchoUrl = `https://echo.epa.gov/facilities/facility-search/results?mediaSelected=sdwa&p_geoSearchType=addr&p_city=${encodeURIComponent(city)}&p_st=${stateAbbr}`;
-  const epaSdwisUrl = `https://enviro.epa.gov/envirofacts/sdwis/search`;
 
   const locationLine = info
     ? `<span>ZIP <strong>${zip}</strong> is in <strong>${escapeHtml(city)}, ${escapeHtml(state)}</strong></span>`
     : `<span>ZIP <strong>${zip}</strong></span>`;
+
+  // Build utility metadata block
+  let utilityBlock = '';
+  if (epaLoading) {
+    utilityBlock = `
+      <div class="utility-meta loading">
+        <div class="meta-row"><span class="meta-key">Water Utility</span><span class="meta-val empty">Loading…</span></div>
+      </div>`;
+  } else if (epa && (epa.name || epa.sourceType || epa.population)) {
+    const utilityName = epa.name ? `<div class="utility-name">${escapeHtml(epa.name)}</div>` : '';
+    const sourceRow = epa.sourceType
+      ? `<div class="meta-row"><span class="meta-key">Source of Water</span><span class="meta-val">${escapeHtml(epa.sourceType)}</span></div>`
+      : '';
+    const popRow = epa.population
+      ? `<div class="meta-row"><span class="meta-key">Population Served</span><span class="meta-val">${escapeHtml(epa.population)}</span></div>`
+      : '';
+    const multiNote = epa.totalActiveSystems && epa.totalActiveSystems > 1
+      ? `<div class="multi-note">EPA lists ${epa.totalActiveSystems} active water systems in this ZIP — showing the largest</div>`
+      : '';
+    utilityBlock = `
+      <div class="utility-meta">
+        ${utilityName}
+        ${sourceRow}
+        ${popRow}
+        ${multiNote}
+        <div class="meta-source">Source: EPA SDWIS</div>
+      </div>`;
+  }
+  // If no EPA data, simply omit the block
 
   const html = `
     <div class="zip-card anim">
       <div class="zip-label">Your ZIP Code</div>
       <div class="zip-big">${zip}</div>
       <div class="zip-location">${locationLine}</div>
+      ${utilityBlock}
     </div>
 
     <div class="anim" style="animation-delay:80ms">
       <div class="section-title">Water Quality Reports — Official Sources</div>
 
       <a class="source-link" href="${ewgZipUrl}" target="_blank" rel="noopener">
-        <div class="source-card" style="margin-bottom:10px">
-          <div style="padding:18px 20px">
+        <div class="source-card">
+          <div class="source-inner">
             <div class="source-top">
               <div class="source-name">EWG Tap Water Database <span class="source-arrow">→</span></div>
               <span class="source-tag tag-primary">Best for Contaminants</span>
@@ -211,67 +264,24 @@ function renderReport(zip, info) {
         </div>
       </a>
 
-      <a class="source-link" href="${epaEchoUrl}" target="_blank" rel="noopener">
-        <div class="source-card" style="margin-bottom:10px">
-          <div style="padding:18px 20px">
-            <div class="source-top">
-              <div class="source-name">EPA ECHO <span class="source-arrow">→</span></div>
-              <span class="source-tag tag-official">Official EPA Data</span>
-            </div>
-            <div class="source-desc">The EPA Enforcement and Compliance History Online database. Shows facility inspections, violations, and enforcement actions for water systems in ${escapeHtml(city) || 'your area'}${stateAbbr ? ', ' + stateAbbr : ''}.</div>
-          </div>
-        </div>
-      </a>
-
       <a class="source-link" href="${epaCcrUrl}" target="_blank" rel="noopener">
-        <div class="source-card" style="margin-bottom:10px">
-          <div style="padding:18px 20px">
+        <div class="source-card">
+          <div class="source-inner">
             <div class="source-top">
               <div class="source-name">Find Your Consumer Confidence Report <span class="source-arrow">→</span></div>
               <span class="source-tag tag-official">Annual Utility Report</span>
             </div>
-            <div class="source-desc">Every water utility in the U.S. is required to publish an annual Consumer Confidence Report (CCR) listing every contaminant tested, actual detected levels, and regulatory limits. This is the most authoritative source for your specific water.</div>
+            <div class="source-desc">Every U.S. water utility is required to publish an annual Consumer Confidence Report listing every contaminant tested, actual detected levels, and regulatory limits. This is the most authoritative source for your specific water.</div>
           </div>
         </div>
       </a>
-
-      <a class="source-link" href="${epaSdwisUrl}" target="_blank" rel="noopener">
-        <div class="source-card" style="margin-bottom:10px">
-          <div style="padding:18px 20px">
-            <div class="source-top">
-              <div class="source-name">EPA SDWIS Search <span class="source-arrow">→</span></div>
-              <span class="source-tag tag-tool">Advanced Lookup</span>
-            </div>
-            <div class="source-desc">The EPA Safe Drinking Water Information System. Search public water systems by state, county, or water system name to get detailed compliance records.</div>
-          </div>
-        </div>
-      </a>
-
-      ${stateAbbr ? `
-      <a class="source-link" href="${ewgStateUrl}" target="_blank" rel="noopener">
-        <div class="source-card">
-          <div style="padding:18px 20px">
-            <div class="source-top">
-              <div class="source-name">EWG — All ${escapeHtml(state)} Utilities <span class="source-arrow">→</span></div>
-              <span class="source-tag tag-tool">State Overview</span>
-            </div>
-            <div class="source-desc">Browse every major water system in ${escapeHtml(state)} on EWG's database. Useful if the ZIP search doesn't find your specific utility.</div>
-          </div>
-        </div>
-      </a>` : ''}
     </div>
 
-    <div class="info-banner anim" style="animation-delay:200ms">
-      <strong>How to read these reports:</strong> EWG compares your water to health-based guidelines which are often stricter than federal legal limits. A contaminant can be "legal" but still concerning. Your utility's annual Consumer Confidence Report shows detected levels against the legal limits the EPA requires them to follow.
-    </div>
-
-    <div class="calc-card anim" style="animation-delay:280ms">
+    <div class="calc-card anim" style="animation-delay:200ms">
       <div class="calc-toggle" onclick="toggleCalc()">
-        <div class="calc-toggle-left">
-          <div>
-            <div class="calc-toggle-title">Water Hardness Impact Calculator</div>
-            <div class="calc-toggle-sub">Enter your hardness reading (from your CCR) to see effects</div>
-          </div>
+        <div>
+          <div class="calc-toggle-title">Water Hardness Impact Calculator</div>
+          <div class="calc-toggle-sub">Enter your hardness reading (from your CCR) to see effects</div>
         </div>
         <span class="calc-chevron" id="calcChevron">▼</span>
       </div>
@@ -319,12 +329,9 @@ function renderReport(zip, info) {
 
   document.getElementById('report').innerHTML = html;
   document.getElementById('report').style.display = 'flex';
-  setTimeout(() => document.getElementById('report').scrollIntoView({behavior:'smooth',block:'start'}), 50);
-}
-
-function escapeHtml(s) {
-  if (typeof s !== 'string') return String(s ?? '');
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  if (!epaLoading) {
+    setTimeout(() => document.getElementById('report').scrollIntoView({behavior:'smooth',block:'start'}), 50);
+  }
 }
 
 function toggleCalc() {
@@ -332,7 +339,6 @@ function toggleCalc() {
   document.getElementById('calcChevron').classList.toggle('open');
 }
 
-// Hardness calc
 const IMPACTS = [
   {name:'Shower & Fixtures', lines:['No visible scale or spotting','Minor water spots on fixtures after drying','Soap scum on walls, spotting on glass','Heavy scale on showerheads, reduced water pressure','Severe scaling, corroded finishes, significant flow restriction']},
   {name:'Water Heater', lines:['Full efficiency, no sediment buildup','Negligible efficiency loss','5-8% annual efficiency loss, sediment forming','10-15% efficiency loss per year, scale on heating element','25%+ efficiency loss, high risk of early failure']},
